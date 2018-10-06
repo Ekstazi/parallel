@@ -55,14 +55,7 @@ abstract class AbstractWorker implements Worker {
             throw new StatusError("The worker has been shut down");
         }
 
-        if (!$this->context->isRunning()) {
-            $this->context->start();
-        }
-
-        $job = new Internal\Job($task);
-        $id = $job->getId();
-
-        $promise = $this->pending = call(function () use ($task, $job, $id) {
+        $promise = $this->pending = call(function () use (&$promise, $task) {
             if ($this->pending) {
                 try {
                     yield $this->pending;
@@ -70,6 +63,13 @@ abstract class AbstractWorker implements Worker {
                     // Ignore error from prior job.
                 }
             }
+
+            if (!$this->context->isRunning()) {
+                yield $this->context->start();
+            }
+
+            $job = new Internal\Job($task);
+            $id = $job->getId();
 
             if (!$this->context->isRunning()) {
                 throw new WorkerException("The worker was shutdown");
