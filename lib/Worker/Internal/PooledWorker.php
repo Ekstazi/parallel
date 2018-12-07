@@ -72,4 +72,11 @@ final class PooledWorker implements Worker
     {
         $this->worker->kill();
     }
+
+	public function restart($force = false): Promise
+	{
+		return $this->worker->restart($force);
+	}
+
+
 }

@@ -252,4 +252,11 @@ final class DefaultPool implements Pool
 
         return $worker;
     }
+
+	public function restart($force = false): Promise
+	{
+
+	}
+
+
 }

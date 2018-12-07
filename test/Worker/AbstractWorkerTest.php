@@ -262,4 +262,32 @@ abstract class AbstractWorkerTest extends TestCase
             yield $worker->shutdown();
         });
     }
+
+
+	public function testRestart()
+	{
+		Loop::run(function () {
+			$worker = $this->createWorker();
+			for($i=0; $i<=1; $i++) {
+				$returnValue = yield $worker->enqueue(new TestTask(42));
+				$this->assertEquals(42, $returnValue);
+
+				yield $worker->restart();
+			}
+		});
+	}
+
+	public function testForceRestart()
+	{
+		Loop::run(function () {
+			$worker = $this->createWorker();
+			for($i=0; $i<=1; $i++) {
+				$returnValue = yield $worker->enqueue(new TestTask(42));
+				$this->assertEquals(42, $returnValue);
+
+				yield $worker->restart(true);
+			}
+		});
+	}
+
 }

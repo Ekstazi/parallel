@@ -150,4 +150,16 @@ abstract class TaskWorker implements Worker
 
         $this->exitStatus = new Success(0);
     }
+
+	public function restart($force = false): Promise
+	{
+		return call(function () use ($force){
+			if($force) {
+				$this->context->kill();
+			} else {
+				yield $this->shutdown();
+			}
+			yield $this->context->start();
+		});
+	}
 }
