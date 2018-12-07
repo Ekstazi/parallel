@@ -60,4 +60,16 @@ class WorkerProcess implements Context
     {
         return $this->process->join();
     }
+
+    public function restart($force = false): Promise
+    {
+        return call(function () use ($force) {
+            if ($force) {
+                $this->kill();
+            } else {
+                yield $this->join();
+            }
+            return $this->start();
+        });
+    }
 }

@@ -358,4 +358,19 @@ final class Process implements Context
     {
         $this->process->kill();
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function restart($force = false): Promise
+    {
+        return call(function () use ($force) {
+            if ($force) {
+                $this->kill();
+            } else {
+                yield $this->join();
+            }
+            yield $this->start();
+        });
+    }
 }

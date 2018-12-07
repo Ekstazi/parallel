@@ -67,26 +67,6 @@ abstract class AbstractContextTest extends TestCase
     }
 
     /**
-     * @expectedException \Amp\Parallel\Context\StatusError
-     */
-    public function testStartMultipleTimesThrowsError()
-    {
-        $this->assertRunTimeGreaterThan(function () {
-            Loop::run(function () {
-                $context = $this->createContext(function () {
-                    \sleep(1);
-                });
-
-                yield $context->start();
-                yield $context->join();
-
-                yield $context->start();
-                yield $context->join();
-            });
-        }, 2000);
-    }
-
-    /**
      * @expectedException \Amp\Parallel\Sync\PanicError
      */
     public function testExceptionInContextPanics()
@@ -307,5 +287,85 @@ abstract class AbstractContextTest extends TestCase
             yield $context->start();
             yield $context->send(\str_pad("", 1024 * 1024, "-"));
         });
+    }
+
+    public function testStartAfterJoin()
+    {
+        $this->assertRunTimeGreaterThan(function () {
+            Loop::run(function () {
+                $context = $this->createContext(function () {
+                    \usleep(100000);
+                });
+                for ($i=0; $i<=1;$i++) {
+                    $this->assertFalse($context->isRunning());
+
+                    yield $context->start();
+
+                    $this->assertTrue($context->isRunning());
+
+                    yield $context->join();
+                    $this->assertFalse($context->isRunning());
+                }
+            });
+        }, 200);
+    }
+
+    public function testStartAfterKill()
+    {
+        $this->assertRunTimeLessThan(function () {
+            Loop::run(function () {
+                $context = $this->createContext(function () {
+                    \usleep(100000);
+                });
+                for ($i=0; $i<=1;$i++) {
+                    $this->assertFalse($context->isRunning());
+
+                    yield $context->start();
+
+                    $this->assertTrue($context->isRunning());
+
+                    $this->assertRunTimeLessThan([$context, 'kill'], 1000);
+                    $this->assertFalse($context->isRunning());
+                }
+            });
+        }, 200);
+    }
+
+    public function testRestart()
+    {
+        $this->assertRunTimeGreaterThan(function () {
+            Loop::run(function () {
+                $context = $this->createContext(function () {
+                    \usleep(100000);
+                });
+                $this->assertFalse($context->isRunning());
+                yield $context->start();
+
+                for ($i = 0; $i <= 1; $i++) {
+                    $this->assertTrue($context->isRunning());
+
+                    yield $context->restart();
+                }
+            });
+        }, 200);
+    }
+
+    public function testForceRestart()
+    {
+        $this->assertRunTimeLessThan(function () {
+            Loop::run(function () {
+                $context = $this->createContext(function () {
+                    \usleep(100000);
+                });
+                $this->assertFalse($context->isRunning());
+                yield $context->start();
+
+                for ($i = 0; $i <= 1; $i++) {
+                    $this->assertTrue($context->isRunning());
+
+                    yield $context->restart(true);
+                }
+            });
+        }, 200);
     }
 }

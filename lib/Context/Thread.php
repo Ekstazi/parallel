@@ -193,6 +193,7 @@ final class Thread implements Context
             } finally {
                 $this->close();
             }
+            $this->oid = 0;
         }
     }
 
@@ -248,7 +249,7 @@ final class Thread implements Context
                 Loop::disable($this->watcher);
                 $this->close();
             }
-
+            $this->oid = 0;
             return $response->getResult();
         });
     }
@@ -306,6 +307,21 @@ final class Thread implements Context
             }
 
             return $result;
+        });
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function restart($force = false): Promise
+    {
+        return call(function () use ($force) {
+            if ($force) {
+                $this->kill();
+            } else {
+                yield $this->join();
+            }
+            yield $this->start();
         });
     }
 }
