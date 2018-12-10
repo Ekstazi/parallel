@@ -38,14 +38,8 @@ class WorkerProcess implements Context
         return call(function () {
             $result = yield $this->process->start();
 
-            $stdout = $this->process->getStdout();
-            $stdout->unreference();
 
-            $stderr = $this->process->getStderr();
-            $stderr->unreference();
-
-            ByteStream\pipe($stdout, ByteStream\getStdout());
-            ByteStream\pipe($stderr, ByteStream\getStderr());
+            $this->redirectOutput();
 
             return $result;
         });
@@ -69,7 +63,22 @@ class WorkerProcess implements Context
             } else {
                 yield $this->join();
             }
-            return $this->start();
+            $instance = clone $this;
+            $instance->process = yield $this->process->restart();
+            $instance->redirectOutput();
+            return $instance;
         });
+    }
+
+    private function redirectOutput()
+    {
+        $stdout = $this->process->getStdout();
+        $stdout->unreference();
+
+        $stderr = $this->process->getStderr();
+        $stderr->unreference();
+
+        ByteStream\pipe($stdout, ByteStream\getStdout());
+        ByteStream\pipe($stderr, ByteStream\getStderr());
     }
 }

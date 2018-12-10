@@ -321,7 +321,9 @@ final class Thread implements Context
             } else {
                 yield $this->join();
             }
-            yield $this->start();
+            $instance = new static($this->function, ...$this->args);
+            yield $instance->start();
+            return $instance;
         });
     }
 }

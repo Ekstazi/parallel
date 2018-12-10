@@ -35,7 +35,7 @@ interface Context extends Channel
     /**
      * Restarts the execution context.
      * @param $force bool Whether to force restart or wait until finish first
-     * @return Promise
+     * @return Promise<Context> new context instance
      */
     public function restart($force = false): Promise;
 }

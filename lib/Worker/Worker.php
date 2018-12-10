@@ -42,10 +42,10 @@ interface Worker
      */
     public function kill();
 
-	/**
-	 * Restart worker
-	 * @param bool $force Whether for cancel current task or wait it finished
-	 * @return Promise
-	 */
-	public function restart($force = false): Promise;
+    /**
+     * Restart worker.
+     * @param bool $force Whether for cancel current task or wait it finished
+     * @return Promise
+     */
+    public function restart($force = false): Promise;
 }

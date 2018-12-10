@@ -187,9 +187,7 @@ final class Process implements Context
             try {
                 $pid = yield $this->process->start();
 
-                yield $this->process->getStdin()->write($this->hub->generateKey($pid, self::KEY_LENGTH));
-
-                $this->channel = yield $this->hub->accept($pid);
+                $this->channel = yield $this->createChannel();
 
                 return $pid;
             } catch (\Throwable $exception) {
@@ -198,6 +196,16 @@ final class Process implements Context
             }
         });
     }
+
+    private function createChannel(): Promise
+    {
+        return call(function () {
+            $pid = $this->process->getPid();
+            yield $this->process->getStdin()->write($this->hub->generateKey($pid, self::KEY_LENGTH));
+            return $this->hub->accept($pid);
+        });
+    }
+
 
     /**
      * {@inheritdoc}
@@ -370,7 +378,10 @@ final class Process implements Context
             } else {
                 yield $this->join();
             }
-            yield $this->start();
+            $instance = clone $this;
+            $instance->process = yield $this->process->restart($force);
+            $instance->channel = yield $instance->createChannel();
+            return $instance;
         });
     }
 }
