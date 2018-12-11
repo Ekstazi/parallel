@@ -45,7 +45,7 @@ interface Worker
     /**
      * Restart worker.
      * @param bool $force Whether for cancel current task or wait it finished
-     * @return Promise
+     * @return Promise<Worker> New created  worker
      */
     public function restart($force = false): Promise;
 }

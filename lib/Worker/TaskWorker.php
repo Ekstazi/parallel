@@ -155,11 +155,13 @@ abstract class TaskWorker implements Worker
     {
         return call(function () use ($force) {
             if ($force) {
-                $this->context->kill();
+                $this->kill();
             } else {
                 yield $this->shutdown();
             }
-            yield $this->context->start();
+
+			$context = yield $this->context->restart($force);
+			return new static($context);
         });
     }
 }

@@ -193,7 +193,6 @@ final class Thread implements Context
             } finally {
                 $this->close();
             }
-            $this->oid = 0;
         }
     }
 
@@ -249,7 +248,7 @@ final class Thread implements Context
                 Loop::disable($this->watcher);
                 $this->close();
             }
-            $this->oid = 0;
+
             return $response->getResult();
         });
     }

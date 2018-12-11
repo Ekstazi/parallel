@@ -267,12 +267,13 @@ abstract class AbstractWorkerTest extends TestCase
     public function testRestart()
     {
         Loop::run(function () {
-            $worker = $this->createWorker();
+            $worker = $original = $this->createWorker();
             for ($i=0; $i<=1; $i++) {
                 $returnValue = yield $worker->enqueue(new TestTask(42));
                 $this->assertEquals(42, $returnValue);
 
-                yield $worker->restart();
+                $worker = yield $worker->restart();
+                $this->assertNotEquals($worker, $original);
             }
         });
     }
@@ -280,12 +281,13 @@ abstract class AbstractWorkerTest extends TestCase
     public function testForceRestart()
     {
         Loop::run(function () {
-            $worker = $this->createWorker();
+            $worker = $original = $this->createWorker();
             for ($i=0; $i<=1; $i++) {
                 $returnValue = yield $worker->enqueue(new TestTask(42));
                 $this->assertEquals(42, $returnValue);
 
-                yield $worker->restart(true);
+                $worker = yield $worker->restart(true);
+				$this->assertNotEquals($worker, $original);
             }
         });
     }
