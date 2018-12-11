@@ -2,13 +2,17 @@
 
 namespace Amp\Parallel\Worker;
 
+use Amp\CancellationToken;
+use Amp\Deferred;
 use Amp\Failure;
+use Amp\NullCancellationToken;
 use Amp\Parallel\Context\Context;
 use Amp\Parallel\Context\StatusError;
 use Amp\Parallel\Sync\ChannelException;
 use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
+use function foo\func;
 
 /**
  * Base class for most common types of task workers.
@@ -55,13 +59,13 @@ abstract class TaskWorker implements Worker
     /**
      * {@inheritdoc}
      */
-    public function enqueue(Task $task): Promise
+    public function enqueue(Task $task, CancellationToken $token = null): Promise
     {
         if ($this->exitStatus) {
             throw new StatusError("The worker has been shut down");
         }
 
-        $promise = $this->pending = call(function () use ($task) {
+        $promise = $this->pending = $this->cancellable(call(function () use ($task) {
             if ($this->pending) {
                 try {
                     yield $this->pending;
@@ -98,7 +102,7 @@ abstract class TaskWorker implements Worker
             }
 
             return $result->promise();
-        });
+        }), $token);
 
         $promise->onResolve(function () use ($promise) {
             if ($this->pending === $promise) {
@@ -108,6 +112,34 @@ abstract class TaskWorker implements Worker
 
         return $promise;
     }
+
+    private function cancellable(Promise $promise, CancellationToken $token = null)
+	{
+		return $promise;
+		$deferred = new Deferred();
+
+		$token = $token ?? new NullCancellationToken();
+		$token = $token ?? new NullCancellationToken();
+		$id = $token->subscribe(function ($exception) use ($deferred){
+			$this->pending = null;
+			$this->context->kill();
+			$this->context->start();
+			$deferred->fail($exception);
+		});
+
+		$promise->onResolve(function ($error, $value) use($token, $deferred, $id){
+			if($token->isRequested()) {
+				return;
+			}
+			$token->unsubscribe($id);
+			if($error) {
+				$deferred->fail($error);
+			} else {
+				$deferred->resolve($value);
+			}
+		});
+		return $deferred->promise();
+	}
 
     /**
      * {@inheritdoc}
