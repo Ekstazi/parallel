@@ -308,21 +308,4 @@ final class Thread implements Context
             return $result;
         });
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function restart($force = false): Promise
-    {
-        return call(function () use ($force) {
-            if ($force) {
-                $this->kill();
-            } else {
-                yield $this->join();
-            }
-            $instance = new static($this->function, ...$this->args);
-            yield $instance->start();
-            return $instance;
-        });
-    }
 }

@@ -2,6 +2,7 @@
 
 namespace Amp\Parallel\Worker;
 
+use function Amp\call;
 use Amp\Parallel\Context\StatusError;
 use Amp\Promise;
 
@@ -69,7 +70,9 @@ final class DefaultPool implements Pool
 
         $this->push = static function (Worker $worker) use ($workers, $idleWorkers, $busyQueue) {
             \assert($workers->contains($worker), "The provided worker was not part of this queue");
-
+			if(!$workers->contains($worker)) {
+				$workers->attach($worker, 1);
+			}
             if (($workers[$worker] -= 1) === 0) {
                 // Worker is completely idle, remove from busy queue and add to idle queue.
                 foreach ($busyQueue as $key => $busy) {
@@ -253,7 +256,18 @@ final class DefaultPool implements Pool
         return $worker;
     }
 
+	/**
+	 * {@inheritdoc}
+	 */
     public function restart($force = false): Promise
     {
+		return call(function () use($force) {
+			if($force) {
+				$this->kill();
+			} else {
+				yield $this->shutdown();
+			}
+			return new static($this->maxSize, $this->factory);
+		});
     }
 }

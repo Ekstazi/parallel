@@ -2,6 +2,7 @@
 
 namespace Amp\Parallel\Worker\Internal;
 
+use function Amp\call;
 use Amp\Parallel\Worker\Task;
 use Amp\Parallel\Worker\Worker;
 use Amp\Promise;
@@ -75,6 +76,9 @@ final class PooledWorker implements Worker
 
     public function restart($force = false): Promise
     {
-        return $this->worker->restart($force);
+        return call(function() use($force){
+			$worker = yield $this->worker->restart($force);
+			return new static($worker, $this->push);
+		});
     }
 }

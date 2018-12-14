@@ -8,8 +8,20 @@ namespace Amp\Parallel\Worker;
 final class WorkerProcess extends TaskWorker
 {
     const SCRIPT_PATH = __DIR__ . "/Internal/worker-process.php";
+	/**
+	 * @var string
+	 */
+	private $envClassName;
+	/**
+	 * @var array|mixed[]
+	 */
+	private $env;
+	/**
+	 * @var null|string
+	 */
+	private $binary;
 
-    /**
+	/**
      * @param string $envClassName Name of class implementing \Amp\Parallel\Worker\Environment to instigate.
      *     Defaults to \Amp\Parallel\Worker\BasicEnvironment.
      * @param mixed[] $env Array of environment variables to pass to the worker. Empty array inherits from the current
@@ -20,11 +32,22 @@ final class WorkerProcess extends TaskWorker
      */
     public function __construct(string $envClassName = BasicEnvironment::class, array $env = [], string $binary = null)
     {
-        $script = [
-            self::SCRIPT_PATH,
+		$this->envClassName = $envClassName;
+		$this->env = $env;
+		$this->binary = $binary;
+
+		$script = [
+			self::SCRIPT_PATH,
             $envClassName,
-        ];
+		];
 
         parent::__construct(new Internal\WorkerProcess($script, $env, $binary));
-    }
+	}
+
+	protected function createInstance(): Worker
+	{
+		return new static($this->envClassName, $this->env, $this->binary);
+	}
+
+
 }

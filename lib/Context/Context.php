@@ -31,11 +31,4 @@ interface Context extends Channel
      * @throws \Amp\Parallel\Sync\PanicError If the context throws an uncaught exception.
      */
     public function join(): Promise;
-
-    /**
-     * Restarts the execution context.
-     * @param $force bool Whether to force restart or wait until finish first
-     * @return Promise<Context> new context instance
-     */
-    public function restart($force = false): Promise;
 }

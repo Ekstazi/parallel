@@ -201,4 +201,113 @@ abstract class AbstractPoolTest extends TestCase
             }
         });
     }
+
+	public function testRestart()
+	{
+		$this->assertRunTimeGreaterThan(function () {
+			Loop::run(function () {
+				$pool = $original = $this->createPool(1);
+				for ($i = 0; $i <= 1; $i++) {
+					$this->assertTrue($pool->isRunning());
+
+					$finished = false;
+					$promise = $pool->enqueue(new TestTask(42, 100));
+					$promise->onResolve(function () use(&$finished){
+						$finished = true;
+					});
+
+					$pool = yield $pool->restart();
+
+					$this->assertFalse($original->isRunning());
+					$this->assertTrue($finished);
+					$this->assertNotEquals($pool, $original);
+				}
+			});
+		}, 200);
+	}
+
+	public function testForceRestart()
+	{
+		$this->assertRunTimeLessThan(function () {
+			Loop::run(function () {
+				$pool = $original = $this->createPool(1);
+				for ($i = 0; $i <= 1; $i++) {
+					$this->assertTrue($pool->isRunning());
+
+					$pool->enqueue(new TestTask(42, 1000));
+					$pool = yield $pool->restart(true);
+
+					$this->assertFalse($original->isRunning());
+					$this->assertNotEquals($pool, $original);
+				}
+				$this->assertEquals($i, 2);
+			});
+		}, 2000);
+	}
+
+	public function testWorkerRestart()
+	{
+		$this->assertRunTimeGreaterThan(function () {
+			Loop::run(function () {
+				$pool = $original = $this->createPool(1);
+				for ($i = 0; $i <= 1; $i++) {
+					$this->assertTrue($pool->isRunning());
+
+					$finished = false;
+					$promise = $pool->enqueue(new TestTask(42, 100));
+					$promise->onResolve(function () use(&$finished){
+						$finished = true;
+					});
+
+					$pool = yield $pool->restart();
+
+					$this->assertFalse($original->isRunning());
+					$this->assertTrue($finished);
+					$this->assertNotEquals($pool, $original);
+				}
+			});
+		}, 200);
+	}
+
+	public function testWorkerForceRestart()
+	{
+		$this->assertRunTimeLessThan(function () {
+			Loop::run(function () {
+				$pool  = $this->createPool(1);
+				$worker = $original = $pool->getWorker();
+				for ($i = 0; $i <= 1; $i++) {
+					$this->assertTrue($pool->isRunning());
+
+					$worker->enqueue(new TestTask(42, 100));
+					$worker = yield $worker->restart(true);
+
+					$this->assertFalse($original->isRunning());
+					$this->assertNotEquals($worker, $original);
+				}
+				$this->assertEquals($i, 2);
+			});
+		}, 200);
+	}
+
+	public function testRestartedWorkerPushed()
+	{
+		Loop::run(function () {
+			$pool  = $this->createPool(1);
+			$worker = $original = $pool->getWorker();
+
+			/** @var Worker $restarted */
+			$restarted = yield $worker->restart();
+			$reference = clone $restarted;
+			// force destruct
+			$worker->__destruct();
+			unset($worker);
+			$restarted->__destruct();
+			unset($restarted);
+
+			$pulled = $pool->getWorker();
+			$this->assertFalse($original->isRunning());
+			$reference->kill();
+			$this->assertFalse($pulled->isRunning());
+		});
+	}
 }

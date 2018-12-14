@@ -11,29 +11,43 @@ use Amp\Promise;
  */
 final class WorkerThread extends TaskWorker
 {
-    /**
+	/**
+	 * @var string
+	 */
+	private $envClassName;
+
+	/**
      * @param string $envClassName Name of class implementing \Amp\Parallel\Worker\Environment to instigate.
      *     Defaults to \Amp\Parallel\Worker\BasicEnvironment.
      */
     public function __construct(string $envClassName = BasicEnvironment::class)
     {
+		$this->envClassName = $envClassName;
+
         parent::__construct(new Thread(function (Channel $channel, string $className): Promise {
-            if (!\class_exists($className)) {
-                throw new \Error(\sprintf("Invalid environment class name '%s'", $className));
-            }
+			if (!\class_exists($className)) {
+				throw new \Error(\sprintf("Invalid environment class name '%s'", $className));
+			}
 
-            if (!\is_subclass_of($className, Environment::class)) {
-                throw new \Error(\sprintf("The class '%s' does not implement '%s'", $className, Environment::class));
-            }
+			if (!\is_subclass_of($className, Environment::class)) {
+				throw new \Error(\sprintf("The class '%s' does not implement '%s'", $className, Environment::class));
+			}
 
-            $environment = new $className;
+			$environment = new $className;
 
-            if (!\defined("AMP_WORKER")) {
-                \define("AMP_WORKER", "amp-worker");
-            }
+			if (!\defined("AMP_WORKER")) {
+				\define("AMP_WORKER", "amp-worker");
+			}
 
-            $runner = new TaskRunner($channel, $environment);
-            return $runner->run();
+			$runner = new TaskRunner($channel, $environment);
+			return $runner->run();
         }, $envClassName));
-    }
+	}
+
+	protected function createInstance(): Worker
+	{
+		return new static($this->envClassName);
+	}
+
+
 }

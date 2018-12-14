@@ -160,8 +160,13 @@ abstract class TaskWorker implements Worker
                 yield $this->shutdown();
             }
 
-			$context = yield $this->context->restart($force);
-			return new static($context);
+			return $this->createInstance();
         });
     }
+
+	/**
+	 * Create new instance of worker
+	 * @return Worker
+	 */
+    abstract protected function createInstance(): Worker;
 }

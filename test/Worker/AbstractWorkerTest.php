@@ -266,29 +266,45 @@ abstract class AbstractWorkerTest extends TestCase
 
     public function testRestart()
     {
-        Loop::run(function () {
-            $worker = $original = $this->createWorker();
-            for ($i=0; $i<=1; $i++) {
-                $returnValue = yield $worker->enqueue(new TestTask(42));
-                $this->assertEquals(42, $returnValue);
+		$this->assertRunTimeGreaterThan(function () {
+			Loop::run(function () {
+				$worker = $original = $this->createWorker();
+				for ($i = 0; $i <= 1; $i++) {
+					$this->assertTrue($worker->isRunning());
 
-                $worker = yield $worker->restart();
-                $this->assertNotEquals($worker, $original);
-            }
-        });
+					$finished = false;
+					$promise = $worker->enqueue(new TestTask(42, 100));
+					$promise->onResolve(function () use(&$finished){
+						$finished = true;
+					});
+
+					$worker = yield $worker->restart();
+
+					$this->assertFalse($original->isRunning());
+					$this->assertTrue($finished);
+					$this->assertNotEquals($worker, $original);
+				}
+			});
+		}, 200);
     }
 
     public function testForceRestart()
     {
-        Loop::run(function () {
-            $worker = $original = $this->createWorker();
-            for ($i=0; $i<=1; $i++) {
-                $returnValue = yield $worker->enqueue(new TestTask(42));
-                $this->assertEquals(42, $returnValue);
+		$this->assertRunTimeLessThan(function () {
+			Loop::run(function () {
+				$worker = $original = $this->createWorker();
+				for ($i = 0; $i <= 1; $i++) {
+					$this->assertTrue($worker->isRunning());
 
-                $worker = yield $worker->restart(true);
-				$this->assertNotEquals($worker, $original);
-            }
-        });
+					$worker->enqueue(new TestTask(42, 100));
+					$worker = yield $worker->restart(true);
+
+					$this->assertFalse($original->isRunning());
+					$this->assertNotEquals($worker, $original);
+				}
+				$this->assertEquals($i, 2);
+			});
+		}, 200);
     }
+
 }

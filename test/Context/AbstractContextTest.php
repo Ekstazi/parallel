@@ -308,42 +308,4 @@ abstract class AbstractContextTest extends TestCase
             yield $context->send(\str_pad("", 1024 * 1024, "-"));
         });
     }
-
-    public function testRestart()
-    {
-        $this->assertRunTimeGreaterThan(function () {
-            Loop::run(function () {
-                $context = $original = $this->createContext(function () {
-                    \usleep(100000);
-                });
-                $this->assertFalse($context->isRunning());
-                yield $context->start();
-
-                for ($i = 0; $i <= 1; $i++) {
-                    $this->assertTrue($context->isRunning());
-                    $context = yield $context->restart();
-                    $this->assertNotSame($context, $original);
-                }
-            });
-        }, 200);
-    }
-
-    public function testForceRestart()
-    {
-        $this->assertRunTimeLessThan(function () {
-            Loop::run(function () {
-                $context = $original = $this->createContext(function () {
-                    \usleep(100000);
-                });
-                $this->assertFalse($context->isRunning());
-                yield $context->start();
-
-                for ($i = 0; $i <= 1; $i++) {
-                    $this->assertTrue($context->isRunning());
-
-                    $context = yield $context->restart(true);
-                }
-            });
-        }, 200);
-    }
 }

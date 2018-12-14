@@ -84,41 +84,4 @@ class ProcessTest extends TestCase
             \var_dump(yield $process->join());
         });
     }
-
-
-    public function testRestart()
-    {
-        $this->assertRunTimeGreaterThan(function () {
-            Loop::run(function () {
-                $context = $original = new Process(__DIR__ . "/wait-process.php");
-                $this->assertFalse($context->isRunning());
-                yield $context->start();
-
-                for ($i = 0; $i <= 1; $i++) {
-                    $this->assertTrue($context->isRunning());
-
-                    $context = yield $context->restart();
-
-                    $this->assertNotSame($context, $original);
-                }
-            });
-        }, 2000);
-    }
-
-    public function testForceRestart()
-    {
-        $this->assertRunTimeLessThan(function () {
-            Loop::run(function () {
-                $context = new Process(__DIR__ . "/wait-process.php");
-                $this->assertFalse($context->isRunning());
-                yield $context->start();
-
-                for ($i = 0; $i <= 1; $i++) {
-                    $this->assertTrue($context->isRunning());
-
-                    yield $context->restart(true);
-                }
-            });
-        }, 2000);
-    }
 }

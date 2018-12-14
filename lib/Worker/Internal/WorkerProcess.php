@@ -38,8 +38,14 @@ class WorkerProcess implements Context
         return call(function () {
             $result = yield $this->process->start();
 
+            $stdout = $this->process->getStdout();
+            $stdout->unreference();
 
-            $this->redirectOutput();
+            $stderr = $this->process->getStderr();
+            $stderr->unreference();
+
+            ByteStream\pipe($stdout, ByteStream\getStdout());
+            ByteStream\pipe($stderr, ByteStream\getStderr());
 
             return $result;
         });
@@ -53,32 +59,5 @@ class WorkerProcess implements Context
     public function join(): Promise
     {
         return $this->process->join();
-    }
-
-    public function restart($force = false): Promise
-    {
-        return call(function () use ($force) {
-            if ($force) {
-                $this->kill();
-            } else {
-                yield $this->join();
-            }
-            $instance = clone $this;
-            $instance->process = yield $this->process->restart();
-            $instance->redirectOutput();
-            return $instance;
-        });
-    }
-
-    private function redirectOutput()
-    {
-        $stdout = $this->process->getStdout();
-        $stdout->unreference();
-
-        $stderr = $this->process->getStderr();
-        $stderr->unreference();
-
-        ByteStream\pipe($stdout, ByteStream\getStdout());
-        ByteStream\pipe($stderr, ByteStream\getStderr());
     }
 }
